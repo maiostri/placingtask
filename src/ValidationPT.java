@@ -30,16 +30,13 @@ public class ValidationPT {
         Map<Integer, Position> groundTruthFromDevSamples = loadGroundTruthFromDevSamples();
         System.out.println(" Done training. ");
 
+        GroundTruthResolver groundTruthResolver = new GroundTruthResolver(groundTruthFromDevSamples);
+
         List<MediaSample> mediaSamples = new ArrayList<MediaSample>();
 
         for (File file : files) {
-            MediaSample mediaSample = readMediaSample(file, groundTruthFromDevSamples);
+            MediaSample mediaSample = readMediaSample(file, groundTruthResolver);
             mediaSamples.add(mediaSample);
-
-            //FIXME retirar este if depois. usado so pra testar
-            if(mediaSamples.size() == 20) {
-                break;
-            }
         }
 
         for (MediaSample mediaSample : mediaSamples) {
@@ -123,7 +120,7 @@ public class ValidationPT {
         return Integer.parseInt(id);
     }
 
-    private static MediaSample readMediaSample(File sampleFile, Map<Integer, Position> groundTruthFromDevSamples) throws IOException {
+    private static MediaSample readMediaSample(File sampleFile, GroundTruthResolver groundTruthResolver) throws IOException {
         Integer sampleIdentifier = readSampleIdentifierFromFilename(sampleFile.getName());
 
         System.out.println(sampleIdentifier);
@@ -131,7 +128,7 @@ public class ValidationPT {
         MediaSample mediaSample = new MediaSample();
         mediaSample.setFileName(sampleFile.getName());
 
-        Position sampleGroundTruth = groundTruthFromDevSamples.get(sampleIdentifier);
+        Position sampleGroundTruth = groundTruthResolver.get(sampleIdentifier);
 
         String s = null;
         BufferedReader in = new BufferedReader(new FileReader(sampleFile.getAbsoluteFile()));
@@ -141,7 +138,7 @@ public class ValidationPT {
             run.setSimilarityFactor(Double.parseDouble(s_args[0].replace(",", ".")));
             run.setIdentifier(readSampleIdentifierFromDevSampleName(s_args[1]));
 
-            Position runGroundTruth = groundTruthFromDevSamples.get(run.getIdentifier());
+            Position runGroundTruth = groundTruthResolver.get(run.getIdentifier());
 
             run.setGroundTruth(runGroundTruth);
             run.setHavesineDistance(MathUtils.calcHaversineDistance(runGroundTruth, sampleGroundTruth));
