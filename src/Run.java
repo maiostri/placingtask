@@ -1,35 +1,17 @@
 
 public class Run {
 
-    private Integer fileName;
-    private double latitude;
-    private double longitude;
-    private double havesineDistance;
+    private Integer identifier;
     private double similarityFactor;
     private Position groundTruth;
+    private double havesineDistance;
 
-    public Integer getFileName() {
-        return fileName;
+    public Integer getIdentifier() {
+        return identifier;
     }
 
-    public void setFileName(Integer fileName) {
-        this.fileName = fileName;
-    }
-
-    public double getLatitude() {
-        return latitude;
-    }
-
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
-    }
-
-    public double getLongitude() {
-        return longitude;
-    }
-
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
+    public void setIdentifier(Integer fileName) {
+        this.identifier = fileName;
     }
 
     public double getHavesineDistance() {

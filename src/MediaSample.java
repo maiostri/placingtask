@@ -12,6 +12,11 @@ class MediaSample {
 		this.similarityList = new ArrayList<Run>();
 	}
 
+	public void determineMediaAnswer() {
+        // Simple KNN with N = 1.
+        setAnswerMedia(getSimilarityList().get(0));
+    }
+
 	public String getFileName() {
 		return this.fileName;
 	}

@@ -1,5 +1,4 @@
 
-
 public class MathUtils {
 
     /**
@@ -9,7 +8,7 @@ public class MathUtils {
         return (Math.PI / 180) * degree;
     }
 
-    public static double calcHaversineDistance(Run pos1, Position pos2) {
+    public static double calcHaversineDistance(Position pos1, Position pos2) {
     	double R = 6371.0;
     	double dLat = toRadian(pos2.getLatitude() - pos1.getLatitude());
     	double dLon = toRadian(pos2.getLongitude() - pos1.getLongitude());

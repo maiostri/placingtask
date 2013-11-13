@@ -1,30 +1,29 @@
 
 class Position {
-    private int fileName;
+    private int identifier;
     private double latitude;
     private double longitude;
 
-    public int getFileName() {
-        return fileName;
+    public Position(int fileName, double latitude, double longitude) {
+        this.identifier = fileName;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
-    public void setFileName(int fileName) {
-        this.fileName = fileName;
+    public int getIdentifier() {
+        return identifier;
     }
 
     public double getLatitude() {
         return latitude;
     }
 
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
-    }
-
     public double getLongitude() {
         return longitude;
     }
 
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
+    @Override
+    public String toString() {
+        return new StringBuilder("fileName=").append(identifier).append(", latitude=").append(latitude).append(", longitude=").append(longitude).toString();
     }
 }
