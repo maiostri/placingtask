@@ -12,11 +12,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import project.entity.Location;
-import project.entity.Rang;
-import project.entity.Run;
+import project.entity.RankedListElement;
 import project.entity.Sample;
+import project.entity.ThresholdCounter;
 
-public class ValidationPT {
+public class Validator {
 
     public static void main(String[] args) throws IOException {
         if(args.length == 0){
@@ -24,22 +24,22 @@ public class ValidationPT {
         }
 
         // Import *.list files
-        File[] files = new File(args[0]).listFiles();
+        File[] sampleFiles = new File(args[0]).listFiles();
 
         //linha abaixo apenas para facilitar testes. rewmover depois!
-        //files = Arrays.copyOfRange(files, 0, 500);
+        //sampleFiles = Arrays.copyOfRange(sampleFiles, 0, 100);
 
         System.out.println("Valitation toolbox, based on its initial version from Pascal Kelm, for the Placing Task at MediaEval.\n");
 
         GroundTruthResolver groundTruthResolver = loadGroundTruth();
 
-        List<Sample> mediaSamples = new ArrayList<Sample>();
+        List<Sample> samples = new ArrayList<Sample>();
 
-        for (File file : files) {
+        for (File file : sampleFiles) {
             Sample mediaSample = readMediaSample(file, groundTruthResolver);
-            mediaSample.determineMediaAnswer();
+            mediaSample.estimateLocation();
 
-            mediaSamples.add(mediaSample);
+            samples.add(mediaSample);
         }
 
         System.out.println(" Done.");
@@ -48,8 +48,8 @@ public class ValidationPT {
          * Calc thresholds
          ****************/
         System.out.print("Calculating thresholds... ");
-        Map<Double, Rang> list_range = new TreeMap<Double, Rang>();
-        for (Sample mediaSample : mediaSamples) {
+        Map<Double, ThresholdCounter> list_range = new TreeMap<Double, ThresholdCounter>();
+        for (Sample mediaSample : samples) {
             double havesineDistance = mediaSample.calcHavesineDistance();
 
             Double thresholdMatch = null;
@@ -60,9 +60,9 @@ public class ValidationPT {
                 }
             }
 
-            Rang rang = list_range.get(thresholdMatch);
+            ThresholdCounter rang = list_range.get(thresholdMatch);
             if (rang == null) {
-                rang = new Rang();
+                rang = new ThresholdCounter();
                 rang.setThreshold(thresholdMatch);
                 list_range.put(thresholdMatch, rang);
             }
@@ -73,7 +73,7 @@ public class ValidationPT {
          * Save Results
          *****************/
         writeFinalList(list_range);
-        writeFinalListCompact(mediaSamples, list_range);
+        writeFinalListCompact(samples, list_range);
 
         System.out.println(" Finish.");
     }
@@ -143,7 +143,7 @@ public class ValidationPT {
             String runIdentifier = readSampleIdentifierFromDevSampleName(s_args[1]);
             Location runGroundTruth = groundTruthResolver.get(runIdentifier);
 
-            Run run = new Run(runIdentifier, runGroundTruth, Double.parseDouble(s_args[0].replace(",", ".")));
+            RankedListElement run = new RankedListElement(runIdentifier, runGroundTruth, Double.parseDouble(s_args[0].replace(",", ".")));
 
             mediaSample.addSimilarityElement(run);
         }
@@ -160,10 +160,10 @@ public class ValidationPT {
         return devSampleName.replace("FlickrVideosTrain/", "");
     }
 
-    private static void writeFinalList(Map<Double, Rang> rangs) throws IOException {
+    private static void writeFinalList(Map<Double, ThresholdCounter> rangs) throws IOException {
         File fileList = new File(Configs.FILENAME_FINAL_LIST);
         BufferedWriter bw = new BufferedWriter(new FileWriter(fileList));
-        for (Rang rang : rangs.values()) {
+        for (ThresholdCounter rang : rangs.values()) {
             for(Sample mediaSample : rang.getSamples()){
                 bw.write("sample: " + mediaSample.getIdentifier() + " \t threshold: " + rang.getThreshold());
                 bw.newLine();
@@ -172,13 +172,13 @@ public class ValidationPT {
         bw.close();
     }
 
-    private static void writeFinalListCompact(List<Sample> mediaSampleList, Map<Double, Rang> rangs) throws IOException {
+    private static void writeFinalListCompact(List<Sample> mediaSampleList, Map<Double, ThresholdCounter> rangs) throws IOException {
         File fileListCompact = new File(Configs.FILENAME_FINAL_LIST_COMPACT);
         BufferedWriter bwCompact = new BufferedWriter(new FileWriter(fileListCompact));
         bwCompact.write("Threshold \t Count \t Percentage");
         bwCompact.newLine();
         for (Double threshold : Configs.thresholdsList) {
-            Rang rang = rangs.get(threshold);
+            ThresholdCounter rang = rangs.get(threshold);
             int countThreshold = rang == null ? 0 : rang.getCount();
             bwCompact.write(threshold + "\t " + countThreshold + " \t " + (countThreshold * 100.0) / mediaSampleList.size());
             bwCompact.newLine();

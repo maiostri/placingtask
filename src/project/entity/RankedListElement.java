@@ -1,11 +1,11 @@
 package project.entity;
 
-public class Run {
+public class RankedListElement {
     private String identifier;
     private Location groundTruth;
     private double similarityFactor;
 
-    public Run(String identifier, Location groundTruth, double similarityFactor) {
+    public RankedListElement(String identifier, Location groundTruth, double similarityFactor) {
         this.identifier = identifier;
         this.groundTruth = groundTruth;
         this.similarityFactor = similarityFactor;

@@ -7,13 +7,13 @@ public class Sample {
     private String identifier;
     private Location location;
 
-    private List<Run> similarityList;
+    private List<RankedListElement> similarityList;
     private Location estimatedLocation;
 
     public Sample(String identifier, Location location) {
         this.identifier = identifier;
         this.location = location;
-        this.similarityList = new ArrayList<Run>();
+        this.similarityList = new ArrayList<RankedListElement>();
     }
 
     public String getIdentifier() {
@@ -24,15 +24,15 @@ public class Sample {
         return location;
     }
 
-    public List<Run> getSimilarityList() {
+    public List<RankedListElement> getSimilarityList() {
         return similarityList;
     }
 
-    public void addSimilarityElement(Run run) {
+    public void addSimilarityElement(RankedListElement run) {
         similarityList.add(run);
     }
 
-    public void determineMediaAnswer() {
+    public void estimateLocation() {
         // Simple KNN with N = 1.
         estimatedLocation = similarityList.get(0).getGroundTruth();
     }

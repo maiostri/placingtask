@@ -1,7 +1,7 @@
 package project;
+
 import java.util.Arrays;
 import java.util.List;
-
 
 public class Configs {
     public static final String FILENAME_GROUND_TRUTH_DEV_SAMPLES = "MediaEval2012DvlpLatLong.txt";

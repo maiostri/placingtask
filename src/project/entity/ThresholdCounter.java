@@ -2,7 +2,7 @@ package project.entity;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Rang {
+public class ThresholdCounter {
     private double threshold;
     private List<Sample> samples = new ArrayList<Sample>();
 
