@@ -1,3 +1,4 @@
+package project;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -10,6 +11,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import project.entity.Location;
+import project.entity.Rang;
+import project.entity.Run;
+import project.entity.Sample;
 
 public class ValidationPT {
 
@@ -28,10 +33,10 @@ public class ValidationPT {
 
         GroundTruthResolver groundTruthResolver = loadGroundTruth();
 
-        List<MediaSample> mediaSamples = new ArrayList<MediaSample>();
+        List<Sample> mediaSamples = new ArrayList<Sample>();
 
         for (File file : files) {
-            MediaSample mediaSample = readMediaSample(file, groundTruthResolver);
+            Sample mediaSample = readMediaSample(file, groundTruthResolver);
             mediaSample.determineMediaAnswer();
 
             mediaSamples.add(mediaSample);
@@ -44,12 +49,12 @@ public class ValidationPT {
          ****************/
         System.out.print("Calculating thresholds... ");
         Map<Double, Rang> list_range = new TreeMap<Double, Rang>();
-        for (MediaSample mediaSample : mediaSamples) {
+        for (Sample mediaSample : mediaSamples) {
+            double havesineDistance = mediaSample.calcHavesineDistance();
 
             Double thresholdMatch = null;
-
             for (Double threshold : Configs.thresholdsList) {
-                if (mediaSample.getAnswerMedia().getHavesineDistance() < threshold) {
+                if (havesineDistance < threshold) {
                     thresholdMatch = threshold;
                     break;
                 }
@@ -75,12 +80,12 @@ public class ValidationPT {
 
     private static GroundTruthResolver loadGroundTruth() throws IOException {
         System.out.print("Import ground truth... ");
-        Map<String, Position> groundTruthFromTestSamples = loadGroundTruthFromTestSamples();
+        Map<String, Location> groundTruthFromTestSamples = loadGroundTruthFromTestSamples();
         System.out.println("Done ground truth.");
         int size1 = groundTruthFromTestSamples.size();
 
         System.out.print("Import training file... ");
-        Map<String, Position> groundTruthFromDevSamples = loadGroundTruthFromDevSamples();
+        Map<String, Location> groundTruthFromDevSamples = loadGroundTruthFromDevSamples();
         System.out.println("Done training.");
         int size2 = groundTruthFromDevSamples.size();
 
@@ -92,61 +97,54 @@ public class ValidationPT {
         return new GroundTruthResolver(groundTruthFromTestSamples);
     }
 
-    private static Map<String, Position> loadGroundTruthFromTestSamples() throws IOException {
-        Map<String, Position> idPositionTestMap = new LinkedHashMap<String, Position>();
+    private static Map<String, Location> loadGroundTruthFromTestSamples() throws IOException {
+        Map<String, Location> idPositionTestMap = new LinkedHashMap<String, Location>();
 
         String s = null;
         BufferedReader in = new BufferedReader(new FileReader(Configs.FILENAME_GROUND_TRUTH_TEST_SAMPLES));
 
         while ((s = in.readLine()) != null) {
             String[] arg = s.split(";");
-            Position temp_Pos = new Position(arg[0], Double.parseDouble(arg[1]), Double.parseDouble(arg[2]));
-            idPositionTestMap.put(temp_Pos.getIdentifier(), temp_Pos);
+            idPositionTestMap.put(arg[0], new Location(Double.parseDouble(arg[1]), Double.parseDouble(arg[2])));
         }
         in.close();
 
         return idPositionTestMap;
     }
 
-    private static Map<String, Position> loadGroundTruthFromDevSamples() throws IOException {
-        Map<String, Position> idPositionDVLPMap = new LinkedHashMap<String, Position>();
+    private static Map<String, Location> loadGroundTruthFromDevSamples() throws IOException {
+        Map<String, Location> idPositionDVLPMap = new LinkedHashMap<String, Location>();
 
         String s = null;
         BufferedReader in = new BufferedReader(new FileReader(Configs.FILENAME_GROUND_TRUTH_DEV_SAMPLES));
         while ((s = in.readLine()) != null) {
             String[] arg = s.split(";");
-            Position temp_Pos = new Position(arg[0], Double.parseDouble(arg[1]), Double.parseDouble(arg[2]));
-            idPositionDVLPMap.put(temp_Pos.getIdentifier(), temp_Pos);
+            idPositionDVLPMap.put(arg[0], new Location(Double.parseDouble(arg[1]), Double.parseDouble(arg[2])));
         }
         in.close();
 
         return idPositionDVLPMap;
     }
 
-    private static MediaSample readMediaSample(File sampleFile, GroundTruthResolver groundTruthResolver) throws IOException {
+    private static Sample readMediaSample(File sampleFile, GroundTruthResolver groundTruthResolver) throws IOException {
         String sampleIdentifier = readSampleIdentifierFromFilename(sampleFile.getName());
 
         System.out.println(sampleIdentifier);
 
-        MediaSample mediaSample = new MediaSample();
-        mediaSample.setFileName(sampleFile.getName());
+        Location sampleGroundTruth = groundTruthResolver.get(sampleIdentifier);
 
-        Position sampleGroundTruth = groundTruthResolver.get(sampleIdentifier);
+        Sample mediaSample = new Sample(sampleIdentifier, sampleGroundTruth);
 
         String s = null;
         BufferedReader in = new BufferedReader(new FileReader(sampleFile));
         while ((s = in.readLine()) != null) {
-            Run run = new Run();
-            {
-                String[] s_args = s.trim().split("\\s++");
-                run.setSimilarityFactor(Double.parseDouble(s_args[0].replace(",", ".")));
-                run.setIdentifier(readSampleIdentifierFromDevSampleName(s_args[1]));
-            }
+            String[] s_args = s.trim().split("\\s++");
 
-            Position runGroundTruth = groundTruthResolver.get(run.getIdentifier());
+            String runIdentifier = readSampleIdentifierFromDevSampleName(s_args[1]);
+            Location runGroundTruth = groundTruthResolver.get(runIdentifier);
 
-            run.setGroundTruth(runGroundTruth);
-            run.setHavesineDistance(MathUtils.calcHaversineDistance(runGroundTruth, sampleGroundTruth));
+            Run run = new Run(runIdentifier, runGroundTruth, Double.parseDouble(s_args[0].replace(",", ".")));
+
             mediaSample.addSimilarityElement(run);
         }
         in.close();
@@ -166,15 +164,15 @@ public class ValidationPT {
         File fileList = new File(Configs.FILENAME_FINAL_LIST);
         BufferedWriter bw = new BufferedWriter(new FileWriter(fileList));
         for (Rang rang : rangs.values()) {
-            for(MediaSample mediaSample : rang.getMediaSamples()){
-                bw.write("file: " + mediaSample.getFileName() + " \t threshold: " + rang.getThreshold());
+            for(Sample mediaSample : rang.getSamples()){
+                bw.write("sample: " + mediaSample.getIdentifier() + " \t threshold: " + rang.getThreshold());
                 bw.newLine();
             }
         }
         bw.close();
     }
 
-    private static void writeFinalListCompact(List<MediaSample> mediaSampleList, Map<Double, Rang> rangs) throws IOException {
+    private static void writeFinalListCompact(List<Sample> mediaSampleList, Map<Double, Rang> rangs) throws IOException {
         File fileListCompact = new File(Configs.FILENAME_FINAL_LIST_COMPACT);
         BufferedWriter bwCompact = new BufferedWriter(new FileWriter(fileListCompact));
         bwCompact.write("Threshold \t Count \t Percentage");
