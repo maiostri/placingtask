@@ -6,7 +6,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -21,30 +21,20 @@ public class ValidationPT {
         // Import *.list files
         File[] files = new File(args[0]).listFiles();
 
-        //FIXME linha abaixo apenas para facilitar testes. rewmover depois!
-        //files = Arrays.copyOfRange(files, 0, 20);
+        //linha abaixo apenas para facilitar testes. rewmover depois!
+        //files = Arrays.copyOfRange(files, 0, 500);
 
         System.out.println("Valitation toolbox, based on its initial version from Pascal Kelm, for the Placing Task at MediaEval.\n");
 
-        System.out.print("Import ground truth... ");
-        Map<Integer, Position> groundTruthFromTestSamples = loadGroundTruthFromTestSamples();
-        System.out.println(" Done ground truth. ");
-
-        System.out.print("Import training file... ");
-        Map<Integer, Position> groundTruthFromDevSamples = loadGroundTruthFromDevSamples();
-        System.out.println(" Done training. ");
-
-        GroundTruthResolver groundTruthResolver = new GroundTruthResolver(groundTruthFromDevSamples);
+        GroundTruthResolver groundTruthResolver = loadGroundTruth();
 
         List<MediaSample> mediaSamples = new ArrayList<MediaSample>();
 
         for (File file : files) {
             MediaSample mediaSample = readMediaSample(file, groundTruthResolver);
-            mediaSamples.add(mediaSample);
-        }
-
-        for (MediaSample mediaSample : mediaSamples) {
             mediaSample.determineMediaAnswer();
+
+            mediaSamples.add(mediaSample);
         }
 
         System.out.println(" Done.");
@@ -75,27 +65,42 @@ public class ValidationPT {
         }
 
         /*****************
-         * Show Results
+         * Save Results
          *****************/
-
         writeFinalList(list_range);
-
         writeFinalListCompact(mediaSamples, list_range);
 
-        // Save summary in folder
         System.out.println(" Finish.");
     }
 
-    private static Map<Integer, Position> loadGroundTruthFromTestSamples() throws IOException {
-        Map<Integer, Position> idPositionTestMap = new HashMap<Integer, Position>();
+    private static GroundTruthResolver loadGroundTruth() throws IOException {
+        System.out.print("Import ground truth... ");
+        Map<String, Position> groundTruthFromTestSamples = loadGroundTruthFromTestSamples();
+        System.out.println("Done ground truth.");
+        int size1 = groundTruthFromTestSamples.size();
+
+        System.out.print("Import training file... ");
+        Map<String, Position> groundTruthFromDevSamples = loadGroundTruthFromDevSamples();
+        System.out.println("Done training.");
+        int size2 = groundTruthFromDevSamples.size();
+
+        groundTruthFromTestSamples.putAll(groundTruthFromDevSamples);
+        if (groundTruthFromTestSamples.size() < size1 + size2) {
+            throw new IllegalStateException("the ground truth files seemed to have repeated entries");
+        }
+
+        return new GroundTruthResolver(groundTruthFromTestSamples);
+    }
+
+    private static Map<String, Position> loadGroundTruthFromTestSamples() throws IOException {
+        Map<String, Position> idPositionTestMap = new LinkedHashMap<String, Position>();
 
         String s = null;
         BufferedReader in = new BufferedReader(new FileReader(Configs.FILENAME_GROUND_TRUTH_TEST_SAMPLES));
 
         while ((s = in.readLine()) != null) {
             String[] arg = s.split(";");
-            Position temp_Pos = new Position(Integer.parseInt(arg[0].trim()),
-                Double.parseDouble(arg[1].trim()), Double.parseDouble(arg[2].trim()));
+            Position temp_Pos = new Position(arg[0], Double.parseDouble(arg[1]), Double.parseDouble(arg[2]));
             idPositionTestMap.put(temp_Pos.getIdentifier(), temp_Pos);
         }
         in.close();
@@ -103,16 +108,14 @@ public class ValidationPT {
         return idPositionTestMap;
     }
 
-    private static Map<Integer, Position> loadGroundTruthFromDevSamples() throws IOException {
-        Map<Integer, Position> idPositionDVLPMap = new HashMap<Integer, Position>();
+    private static Map<String, Position> loadGroundTruthFromDevSamples() throws IOException {
+        Map<String, Position> idPositionDVLPMap = new LinkedHashMap<String, Position>();
 
         String s = null;
         BufferedReader in = new BufferedReader(new FileReader(Configs.FILENAME_GROUND_TRUTH_DEV_SAMPLES));
         while ((s = in.readLine()) != null) {
             String[] arg = s.split(";");
-            Position temp_Pos = new Position(Integer.parseInt(arg[0].trim().substring(0, 5)),
-                Double.parseDouble(arg[1].trim()),
-                Double.parseDouble(arg[2].trim()));
+            Position temp_Pos = new Position(arg[0], Double.parseDouble(arg[1]), Double.parseDouble(arg[2]));
             idPositionDVLPMap.put(temp_Pos.getIdentifier(), temp_Pos);
         }
         in.close();
@@ -120,18 +123,8 @@ public class ValidationPT {
         return idPositionDVLPMap;
     }
 
-    private static Integer readSampleIdentifierFromFilename(String name) {
-        String fileName = name.replace("p1_", "").replace("p2_", "").replace("_list.txt", "");
-        return Integer.parseInt(fileName);
-    }
-
-    private static Integer readSampleIdentifierFromDevSampleName(String id) {
-        id = id.replace("FlickrVideosTrain/p1_", "").replace("FlickrVideosTrain/p2_", "");
-        return Integer.parseInt(id);
-    }
-
     private static MediaSample readMediaSample(File sampleFile, GroundTruthResolver groundTruthResolver) throws IOException {
-        Integer sampleIdentifier = readSampleIdentifierFromFilename(sampleFile.getName());
+        String sampleIdentifier = readSampleIdentifierFromFilename(sampleFile.getName());
 
         System.out.println(sampleIdentifier);
 
@@ -141,12 +134,14 @@ public class ValidationPT {
         Position sampleGroundTruth = groundTruthResolver.get(sampleIdentifier);
 
         String s = null;
-        BufferedReader in = new BufferedReader(new FileReader(sampleFile.getAbsoluteFile()));
+        BufferedReader in = new BufferedReader(new FileReader(sampleFile));
         while ((s = in.readLine()) != null) {
-            String[] s_args = s.trim().split("\\s++");
             Run run = new Run();
-            run.setSimilarityFactor(Double.parseDouble(s_args[0].replace(",", ".")));
-            run.setIdentifier(readSampleIdentifierFromDevSampleName(s_args[1]));
+            {
+                String[] s_args = s.trim().split("\\s++");
+                run.setSimilarityFactor(Double.parseDouble(s_args[0].replace(",", ".")));
+                run.setIdentifier(readSampleIdentifierFromDevSampleName(s_args[1]));
+            }
 
             Position runGroundTruth = groundTruthResolver.get(run.getIdentifier());
 
@@ -157,6 +152,14 @@ public class ValidationPT {
         in.close();
 
         return mediaSample;
+    }
+
+    private static String readSampleIdentifierFromFilename(String name) {
+        return name.replace("_list.txt", "");
+    }
+
+    private static String readSampleIdentifierFromDevSampleName(String devSampleName) {
+        return devSampleName.replace("FlickrVideosTrain/", "");
     }
 
     private static void writeFinalList(Map<Double, Rang> rangs) throws IOException {

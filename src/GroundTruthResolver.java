@@ -2,13 +2,13 @@ import java.util.Map;
 
 public class GroundTruthResolver {
 
-    private Map<Integer, Position> groundTruth;
+    private Map<String, Position> groundTruth;
 
-    public GroundTruthResolver(Map<Integer, Position> groundTruth) {
+    public GroundTruthResolver(Map<String, Position> groundTruth) {
         this.groundTruth = groundTruth;
     }
 
-    public Position get(Integer sampleIdentifier) {
+    public Position get(String sampleIdentifier) {
         return groundTruth.get(sampleIdentifier);
     }
 

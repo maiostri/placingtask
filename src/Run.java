@@ -1,16 +1,16 @@
 
 public class Run {
 
-    private Integer identifier;
+    private String identifier;
     private double similarityFactor;
     private Position groundTruth;
     private double havesineDistance;
 
-    public Integer getIdentifier() {
+    public String getIdentifier() {
         return identifier;
     }
 
-    public void setIdentifier(Integer fileName) {
+    public void setIdentifier(String fileName) {
         this.identifier = fileName;
     }
 

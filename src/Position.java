@@ -1,16 +1,16 @@
 
 class Position {
-    private int identifier;
+    private String identifier;
     private double latitude;
     private double longitude;
 
-    public Position(int fileName, double latitude, double longitude) {
+    public Position(String fileName, double latitude, double longitude) {
         this.identifier = fileName;
         this.latitude = latitude;
         this.longitude = longitude;
     }
 
-    public int getIdentifier() {
+    public String getIdentifier() {
         return identifier;
     }
 
