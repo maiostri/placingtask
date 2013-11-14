@@ -1,7 +1,9 @@
+import java.util.ArrayList;
+import java.util.List;
+
 class Rang {
     private double threshold;
-    private int count;
-    private String mediaFile;
+    private List<MediaSample> mediaSamples = new ArrayList<MediaSample>();
 
     public double getThreshold() {
         return threshold;
@@ -11,19 +13,15 @@ class Rang {
         this.threshold = threshold;
     }
 
+    public List<MediaSample> getMediaSamples() {
+        return mediaSamples;
+    }
+
+    public void addMediaSample(MediaSample mediaSample) {
+        mediaSamples.add(mediaSample);
+    }
+
     public int getCount() {
-        return count;
-    }
-
-    public void setCount(int count) {
-        this.count = count;
-    }
-
-    public String getMediaFile() {
-        return mediaFile;
-    }
-
-    public void setMediaFile(String mediaFile) {
-        this.mediaFile = mediaFile;
+        return mediaSamples.size();
     }
 }

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class ValidationPT {
 
@@ -19,6 +20,9 @@ public class ValidationPT {
 
         // Import *.list files
         File[] files = new File(args[0]).listFiles();
+
+        //FIXME linha abaixo apenas para facilitar testes. rewmover depois!
+        //files = Arrays.copyOfRange(files, 0, 20);
 
         System.out.println("Valitation toolbox, based on its initial version from Pascal Kelm, for the Placing Task at MediaEval.\n");
 
@@ -49,20 +53,26 @@ public class ValidationPT {
          * Calc thresholds
          ****************/
         System.out.print("Calculating thresholds... ");
-        List<Rang> list_range = new ArrayList<Rang>();
+        Map<Double, Rang> list_range = new TreeMap<Double, Rang>();
         for (MediaSample mediaSample : mediaSamples) {
-            Rang temp_rang = new Rang();
+
+            Double thresholdMatch = null;
 
             for (Double threshold : Configs.thresholdsList) {
                 if (mediaSample.getAnswerMedia().getHavesineDistance() < threshold) {
-                    temp_rang.setThreshold(threshold);
+                    thresholdMatch = threshold;
+                    break;
                 }
             }
 
-            temp_rang.setMediaFile(mediaSample.getFileName());
-            list_range.add(temp_rang);
+            Rang rang = list_range.get(thresholdMatch);
+            if (rang == null) {
+                rang = new Rang();
+                rang.setThreshold(thresholdMatch);
+                list_range.put(thresholdMatch, rang);
+            }
+            rang.addMediaSample(mediaSample);
         }
-
 
         /*****************
          * Show Results
@@ -149,29 +159,27 @@ public class ValidationPT {
         return mediaSample;
     }
 
-    private static void writeFinalList(List<Rang> list_range) throws IOException {
+    private static void writeFinalList(Map<Double, Rang> rangs) throws IOException {
         File fileList = new File(Configs.FILENAME_FINAL_LIST);
         BufferedWriter bw = new BufferedWriter(new FileWriter(fileList));
-        for (Rang rang : list_range) {
-            bw.write("file: " + rang.getMediaFile() + " \t threshold: " + rang.getThreshold());
-            bw.newLine();
+        for (Rang rang : rangs.values()) {
+            for(MediaSample mediaSample : rang.getMediaSamples()){
+                bw.write("file: " + mediaSample.getFileName() + " \t threshold: " + rang.getThreshold());
+                bw.newLine();
+            }
         }
         bw.close();
     }
 
-    private static void writeFinalListCompact(List<MediaSample> mediaSampleList, List<Rang> list_range) throws IOException {
+    private static void writeFinalListCompact(List<MediaSample> mediaSampleList, Map<Double, Rang> rangs) throws IOException {
         File fileListCompact = new File(Configs.FILENAME_FINAL_LIST_COMPACT);
         BufferedWriter bwCompact = new BufferedWriter(new FileWriter(fileListCompact));
         bwCompact.write("Threshold \t Count \t Percentage");
         bwCompact.newLine();
         for (Double threshold : Configs.thresholdsList) {
-            int countThreshold = 0;
-            for (Rang rang : list_range) {
-                if (rang.getThreshold() == threshold) {
-                    countThreshold++;
-                }
-            }
-            bwCompact.write(threshold + "\t " + countThreshold + " \t " + (countThreshold * 100) / mediaSampleList.size());
+            Rang rang = rangs.get(threshold);
+            int countThreshold = rang == null ? 0 : rang.getCount();
+            bwCompact.write(threshold + "\t " + countThreshold + " \t " + (countThreshold * 100.0) / mediaSampleList.size());
             bwCompact.newLine();
         }
         bwCompact.close();
