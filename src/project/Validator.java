@@ -6,15 +6,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import project.entity.Location;
 import project.entity.RankedListElement;
 import project.entity.Sample;
-import project.entity.ThresholdCounter;
 
 public class Validator {
 
@@ -33,49 +31,43 @@ public class Validator {
 
         GroundTruthResolver groundTruthResolver = loadGroundTruth();
 
-        List<Sample> samples = new ArrayList<Sample>();
+        Map<Double, AtomicInteger> countsByThreshold = new TreeMap<Double, AtomicInteger>();
 
         for (File file : sampleFiles) {
             Sample mediaSample = readMediaSample(file, groundTruthResolver);
-            mediaSample.estimateLocation();
 
-            samples.add(mediaSample);
+            mediaSample.estimateLocation();
+            double havesineDistance = mediaSample.calcHavesineDistance();
+
+            Double thresholdMatch = findThresholdMatch(havesineDistance);
+
+            AtomicInteger thresholdCount = countsByThreshold.get(thresholdMatch);
+            if (thresholdCount != null) {
+                thresholdCount.incrementAndGet();
+            }else{
+                countsByThreshold.put(thresholdMatch, new AtomicInteger(1));
+            }
         }
 
         System.out.println(" Done.");
 
-        /****************
-         * Calc thresholds
-         ****************/
-        System.out.print("Calculating thresholds... ");
-        Map<Double, ThresholdCounter> list_range = new TreeMap<Double, ThresholdCounter>();
-        for (Sample mediaSample : samples) {
-            double havesineDistance = mediaSample.calcHavesineDistance();
-
-            Double thresholdMatch = null;
-            for (Double threshold : Configs.thresholdsList) {
-                if (havesineDistance < threshold) {
-                    thresholdMatch = threshold;
-                    break;
-                }
-            }
-
-            ThresholdCounter rang = list_range.get(thresholdMatch);
-            if (rang == null) {
-                rang = new ThresholdCounter();
-                rang.setThreshold(thresholdMatch);
-                list_range.put(thresholdMatch, rang);
-            }
-            rang.addMediaSample(mediaSample);
-        }
-
         /*****************
          * Save Results
          *****************/
-        writeFinalList(list_range);
-        writeFinalListCompact(samples, list_range);
+        writeFinalListCompact(sampleFiles.length, countsByThreshold);
 
         System.out.println(" Finish.");
+    }
+
+    private static Double findThresholdMatch(double havesineDistance) {
+        Double thresholdMatch = null;
+        for (Double threshold : Configs.thresholdsList) {
+            if (havesineDistance < threshold) {
+                thresholdMatch = threshold;
+                break;
+            }
+        }
+        return thresholdMatch;
     }
 
     private static GroundTruthResolver loadGroundTruth() throws IOException {
@@ -160,27 +152,15 @@ public class Validator {
         return devSampleName.replace("FlickrVideosTrain/", "");
     }
 
-    private static void writeFinalList(Map<Double, ThresholdCounter> rangs) throws IOException {
-        File fileList = new File(Configs.FILENAME_FINAL_LIST);
-        BufferedWriter bw = new BufferedWriter(new FileWriter(fileList));
-        for (ThresholdCounter rang : rangs.values()) {
-            for(Sample mediaSample : rang.getSamples()){
-                bw.write("sample: " + mediaSample.getIdentifier() + " \t threshold: " + rang.getThreshold());
-                bw.newLine();
-            }
-        }
-        bw.close();
-    }
-
-    private static void writeFinalListCompact(List<Sample> mediaSampleList, Map<Double, ThresholdCounter> rangs) throws IOException {
-        File fileListCompact = new File(Configs.FILENAME_FINAL_LIST_COMPACT);
+    private static void writeFinalListCompact(int samplesCount, Map<Double, AtomicInteger> countsByThreshold) throws IOException {
+        File fileListCompact = new File(Configs.FILENAME_THRESHOLD_COUNT);
         BufferedWriter bwCompact = new BufferedWriter(new FileWriter(fileListCompact));
         bwCompact.write("Threshold \t Count \t Percentage");
         bwCompact.newLine();
         for (Double threshold : Configs.thresholdsList) {
-            ThresholdCounter rang = rangs.get(threshold);
-            int countThreshold = rang == null ? 0 : rang.getCount();
-            bwCompact.write(threshold + "\t " + countThreshold + " \t " + (countThreshold * 100.0) / mediaSampleList.size());
+            AtomicInteger count = countsByThreshold.get(threshold);
+            int countThreshold = count == null ? 0 : count.get();
+            bwCompact.write(threshold + "\t " + countThreshold + " \t " + (countThreshold * 100.0) / samplesCount);
             bwCompact.newLine();
         }
         bwCompact.close();
