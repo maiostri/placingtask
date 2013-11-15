@@ -13,5 +13,4 @@ public class GroundTruthResolver {
     public Location get(String sampleIdentifier) {
         return groundTruth.get(sampleIdentifier);
     }
-
 }

@@ -8,17 +8,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import project.FileUtils;
 
 public class RLSim {
 
 	/**
-	 * sampleDirirectory --> directory of the sample ranked files
-	 * targetDir --> directory for the new ranked list
-	 * ks --> number of neighbors considered when algorithm starts
-	 * rounds --> number of iterations
-	 * imagesByRankedList --> how many positions for each ranked list
+	 * @param sampleDirirectory --> directory of the sample ranked files
+	 * @param targetDir --> directory for the new ranked list
+	 * @param ks --> number of neighbors considered when algorithm starts
+	 * @param rounds --> number of iterations
+	 * @param sampleByRankedList --> how many positions for each ranked list
 	 */
-    public void RlSim(File sampleDirectory, File targetDir, int ks, int rounds, int imagesByRankedList) throws IOException {
+    public void RlSim(File sampleDirectory, File targetDir, int ks, int rounds, int samplesByRankedList) throws IOException {
 		//create temp directory for create and calculate the new ranked list
 		FileUtils.deleteDirectory(targetDir);
 		boolean isCreated = targetDir.mkdirs();
@@ -51,7 +52,7 @@ public class RLSim {
                 for (int j = 0; j < rankedListSize; j++) {
                     RankedListElement rankedListElement = sample.getRankedList().get(j);
                     String devSampleIdentifier = rankedListElement.devSampleId;
-                    if (j < imagesByRankedList) {
+                    if (j < samplesByRankedList) {
 					    //A(t+1)[i,j] <- d(ti,tj,k)
 
 					    Sample devSample = SampleIO.loadSample(sampleDirectory, devSampleIdentifier);
@@ -112,21 +113,23 @@ public class RLSim {
 
 	//k is with how many samples of the ranking lists will be considered
 	private BigDecimal intersectionMeasure(Sample sample1, Sample sample2, int k){
+		List<RankedListElement> rankedList1 = sample1.getRankedList();
+		List<RankedListElement> rankedList2 = sample2.getRankedList();
 
-		if(k > sample1.getRankedList().size()){
-			k = sample1.getRankedList().size();
+        if(k > rankedList1.size()){
+			k = rankedList1.size();
 		}
 
-        int cont = 0;
+        int intersectionCount = 0;
         for (int i = 0; i < k; i++) {
             for (int j = 0; j < k; j++) {
-				if(sample1.getRankedList().get(i).devSampleId.equals(sample2.getRankedList().get(j).devSampleId)){
-					cont++;
+                if(rankedList1.get(i).devSampleId.equals(rankedList2.get(j).devSampleId)){
+					intersectionCount++;
 				}
 			}
 		}
 
-		BigDecimal v = new BigDecimal(cont).divide(new BigDecimal(k));
+		BigDecimal v = new BigDecimal(intersectionCount).divide(new BigDecimal(k));
 		BigDecimal distance = BigDecimal.ONE.divide(BigDecimal.ONE.add(v),6,RoundingMode.HALF_UP);
 		return distance;
 	}
