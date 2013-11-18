@@ -1,13 +1,9 @@
 package project.rlsim;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Collections;
-import java.util.Comparator;
 import project.FileUtils;
 
 public class RLSim {
@@ -23,6 +19,8 @@ public class RLSim {
     public void RlSim(File devSampleDir, File testDir, File targetDir, int ks, int rounds, int imagesByRankedList) throws NumberFormatException, IOException {
         int t = 0;
         int k = ks;
+
+        RankedListIO rankedListIO = new RankedListIO();
 
         System.out.println("Re-creating results folder...");
         FileUtils.deleteDirectory(targetDir);
@@ -50,17 +48,16 @@ public class RLSim {
 
                 System.out.println("executing from sample " + (i + 1) + " of " + testSampleCount);
 
-                RankedList rankList = readRankedList(testSampleFile, calculateDistance);
+                RankedList rankList = rankedListIO.readRankedList(testSampleFile, calculateDistance);
 
-                for (int j = 0; j < rankList.getElements().size(); j++) {
-                    RankedListElement rankedListElement = rankList.getElements().get(j);
-
-                    File file = new File(devSampleDir, rankedListElement.getId() + "_list.txt");
+                int elementCount = rankList.getCount();
+                for (int j = 0; j < elementCount; j++) {
+                    RankedListElement rankedListElement = rankList.getElement(j);
 
                     if (c < imagesByRankedList) {
                         // A(t+1)[i,j] <- d(ti,tj,k)
 
-                        RankedList aux = readRankedList(file, calculateDistance);
+                        RankedList aux = rankedListIO.readRankedList(devSampleDir, rankedListElement.getId(), calculateDistance);
 
                         // BigDecimal distance = intersectionMeasure(rankList, aux, k);
 
@@ -75,10 +72,10 @@ public class RLSim {
                     c = c + 1;
                 }
 
-                orderByDistance(rankList);
+                rankList.orderByDistance();
 
                 File auxFile = new File(targetDir, testSampleFile.getName());
-                rankList.writeToFile(auxFile);
+                rankedListIO.writeRankedListToFile(rankList, auxFile);
             }
 
             // Perform the ranking
@@ -87,26 +84,15 @@ public class RLSim {
         }
     }
 
-    private RankedList orderByDistance(RankedList r1) {
-        // ordena os itens do ranked list, decrescente, por valor de similaridade
-        Collections.sort(r1.getElements(), new Comparator<RankedListElement>() {
-            public int compare(RankedListElement o1, RankedListElement o2) {
-                return o1.getNewDistance().compareTo(o2.getNewDistance());
-            }
-        });
-
-        return r1;
-    }
-
     private BigDecimal mutualNeighborhs(RankedList r1, RankedList r2) {
-        int post1 = r1.getPosition(r2.getElements().get(0).getId());
+        int post1 = r1.getPosition(r2.getElement(0).getId());
         if (post1 == -1) {
-            post1 = r1.getElements().size() + 1;
+            post1 = r1.getCount() + 1;
         }
 
-        int post2 = r2.getPosition(r1.getElements().get(0).getId());
+        int post2 = r2.getPosition(r1.getElement(0).getId());
         if (post2 == -1) {
-            post2 = r2.getElements().size() + 1;
+            post2 = r2.getCount() + 1;
         }
 
         int distance = post1 + post2;
@@ -116,14 +102,14 @@ public class RLSim {
 
     // k is with how many images of the ranking list will work
     private BigDecimal intersectionMeasure(RankedList r1, RankedList r2, int k) {
-        if (k > r1.getElements().size()) {
-            k = r1.getElements().size();
+        if (k > r1.getCount()) {
+            k = r1.getCount();
         }
 
         int cont = 0;
         for (int i = 0; i < k; i++) {
             for (int j = 0; j < k; j++) {
-                if (r1.getElements().get(i).equals(r2.getElements().get(j))) {
+                if (r1.getElement(i).equals(r2.getElement(j))) {
                     cont = cont + 1;
                 }
             }
@@ -132,42 +118,6 @@ public class RLSim {
         BigDecimal v = new BigDecimal(cont).divide(new BigDecimal(k));
         BigDecimal distance = BigDecimal.ONE.divide(BigDecimal.ONE.add(v), 6, RoundingMode.HALF_UP);
         return distance;
-    }
-
-    private RankedList readRankedList(File file, boolean calculateDistance) throws NumberFormatException, IOException {
-        String fileId = processFileName(file.getName());
-        RankedList rankedList = new RankedList(fileId);
-
-        BufferedReader in = new BufferedReader(new FileReader(file.getAbsoluteFile()));
-        String s = null;
-        int cont = 0;
-        while ((s = in.readLine()) != null) {
-            cont = cont + 1;
-            String[] s_args = s.trim().split("\t");
-
-            String id = s_args[1].trim().replace("FlickrVideosTrain/", "");
-
-            double dist = Double.parseDouble(s_args[0].trim());
-            if (calculateDistance) {
-                dist = 1 - dist;
-            }
-
-            rankedList.setPosition(id, cont);
-
-            BigDecimal distance = new BigDecimal(dist).setScale(6, RoundingMode.HALF_UP);
-
-            RankedListElement rle = new RankedListElement(id, distance);
-            rle.setNewDistance(distance);
-
-            rankedList.getElements().add(rle);
-        }
-        in.close();
-
-        return rankedList;
-    }
-
-    private static String processFileName(String name) {
-        return name.replace("_list.txt", "");
     }
 
     public static void main(String[] args) throws Exception {

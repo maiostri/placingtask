@@ -1,11 +1,7 @@
 package project.rlsim;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -14,18 +10,22 @@ public class RankedList {
     private List<RankedListElement> elements;
     private Map<String, Integer> positionsByElementId;
 
-    public RankedList(String id) {
+    public RankedList(String id, List<RankedListElement> elements, Map<String, Integer> positionsByElementId) {
         this.id = id;
-        elements = new ArrayList<RankedListElement>();
-        positionsByElementId = new HashMap<String, Integer>();
+        this.elements = elements;
+        this.positionsByElementId = positionsByElementId;
     }
 
     public String getId() {
         return id;
     }
 
-    public List<RankedListElement> getElements() {
-        return elements;
+    public int getCount() {
+        return elements.size();
+    }
+
+    public RankedListElement getElement(int j) {
+        return elements.get(j);
     }
 
     public int getPosition(String id) {
@@ -36,17 +36,14 @@ public class RankedList {
         return pos;
     }
 
-    public void setPosition(String id, int pos) {
-        positionsByElementId.put(id, pos);
-    }
-
-    public void writeToFile(File file) throws IOException {
-        BufferedWriter bw = new BufferedWriter(new FileWriter(file));
-        for (RankedListElement element : getElements()) {
-            String s = element.getNewDistance() + "\t" + element.getId();
-            bw.write(s);
-            bw.newLine();
-        }
-        bw.close();
+    /**
+     * Ordena os itens do ranked list, decrescente, por valor de similaridade
+     */
+    public void orderByDistance() {
+        Collections.sort(elements, new Comparator<RankedListElement>() {
+            public int compare(RankedListElement o1, RankedListElement o2) {
+                return o1.getNewDistance().compareTo(o2.getNewDistance());
+            }
+        });
     }
 }

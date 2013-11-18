@@ -10,6 +10,7 @@ public class RankedListElement {
     public RankedListElement(String id, BigDecimal distance) {
         this.id = id;
         this.distance = distance;
+        this.newDistance = distance;
     }
 
     public String getId() {
