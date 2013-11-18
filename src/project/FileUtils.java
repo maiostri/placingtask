@@ -26,7 +26,6 @@ public class FileUtils {
         BufferedWriter bw = new BufferedWriter(new FileWriter(file, true));
         bw.write(s);
         bw.newLine();
-        bw.flush();
         bw.close();
     }
 }

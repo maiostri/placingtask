@@ -1,145 +1,183 @@
 package project.rlsim;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import project.FileUtils;
 
 public class RLSim {
 
-	/**
-	 * @param sampleDirirectory --> directory of the sample ranked files
-	 * @param targetDir --> directory for the new ranked list
-	 * @param ks --> number of neighbors considered when algorithm starts
-	 * @param rounds --> number of iterations
-	 * @param sampleByRankedList --> how many positions for each ranked list
-	 */
-    public void RlSim(File sampleDirectory, File targetDir, int ks, int rounds, int samplesByRankedList) throws IOException {
-		//create temp directory for create and calculate the new ranked list
-		FileUtils.deleteDirectory(targetDir);
-		boolean isCreated = targetDir.mkdirs();
+    /**
+     * @param devSampleDir
+     * @param testDir --> directory of the test ranked files
+     * @param targetDir --> directory for the new ranked list
+     * @param ks --> number of neighbors considered when algorithm starts
+     * @param rounds --> number of iterations
+     * @param imagesByRankedList --> how many positions for each ranked list
+     */
+    public void RlSim(File devSampleDir, File testDir, File targetDir, int ks, int rounds, int imagesByRankedList) throws NumberFormatException, IOException {
+        int t = 0;
+        int k = ks;
+
+        System.out.println("Re-creating results folder...");
+        FileUtils.deleteDirectory(targetDir);
+        boolean isCreated = targetDir.mkdirs();
         if (!isCreated) {
             throw new IOException("Can't create temp directory");
         }
 
-        int t = 0;
-        int k = ks;
-		while (t < rounds){
-			// only in the first time load the original matrix, after that always work with the new rankedList rebuilding after each iteraction
-			File[] files = null;
-			if(t==0){
-				files = sampleDirectory.listFiles();
-			}else{
-				files = targetDir.listFiles();
-			}
+        boolean calculateDistance = Boolean.TRUE;
+        while (t < rounds) {
 
-            int sampleNumber = files.length;
-            for (int i = 0; i < sampleNumber; i++) {
-                System.out.println("Running to sample " + (i + 1) + " of " + sampleNumber);
+            // only in the first time load the original matrix, after that always work with the new rankedList rebuilding after each iteraction
+            File[] files = null;
+            if (t == 0) {
+                files = testDir.listFiles();
+            } else {
+                calculateDistance = Boolean.FALSE;
+                files = targetDir.listFiles();
+            }
 
-			    File currentFile = files[i];
-                Sample sample = SampleIO.loadSample(currentFile);
+            int testSampleCount = files.length;
+            for (int i = 0; i < testSampleCount; i++) {
+                File testSampleFile = files[i];
+                int c = 0;
 
-                int rankedListSize = sample.getRankedList().size();
+                System.out.println("executing from sample " + (i + 1) + " of " + testSampleCount);
 
-                List<RankedListElement> newRankedList = new ArrayList<>(rankedListSize);
+                RankedList rankList = readRankedList(testSampleFile, calculateDistance);
 
-                for (int j = 0; j < rankedListSize; j++) {
-                    RankedListElement rankedListElement = sample.getRankedList().get(j);
-                    String devSampleIdentifier = rankedListElement.devSampleId;
-                    if (j < samplesByRankedList) {
-					    //A(t+1)[i,j] <- d(ti,tj,k)
+                for (int j = 0; j < rankList.getElements().size(); j++) {
+                    RankedListElement rankedListElement = rankList.getElements().get(j);
 
-					    Sample devSample = SampleIO.loadSample(sampleDirectory, devSampleIdentifier);
+                    File file = new File(devSampleDir, rankedListElement.getId() + "_list.txt");
 
-						BigDecimal distance = intersectionMeasure(sample, devSample, k);
+                    if (c < imagesByRankedList) {
+                        // A(t+1)[i,j] <- d(ti,tj,k)
 
-						//TODO permitir a execucacao disto antes do loop. eecutar ou nao a depender de um parametro booleano do algoritmo
-						//BigDecimal distance = mutualNeighborhs(rankList, aux);
+                        RankedList aux = readRankedList(file, calculateDistance);
 
-						newRankedList.add(new RankedListElement(devSampleIdentifier, distance));
-					}else{
-						//A(t+1)[i,j] <- 1 + A(t)[i,j]
-						newRankedList.add(new RankedListElement(devSampleIdentifier, rankedListElement.similarityValue.add(BigDecimal.ONE)));
-					}
-				}
+                        // BigDecimal distance = intersectionMeasure(rankList, aux, k);
 
-				sortRankedListElementsDecreasingByDistance(newRankedList);
+                        // TODO permitir a execucacao disto antes do loop. eecutar ou nao a depender de um parametro booleano do algoritmo
+                        BigDecimal distance = mutualNeighborhs(rankList, aux);
 
-				File auxFile = new File(targetDir, currentFile.getName());
-				SampleIO.writeSample(auxFile, newRankedList);
-			}
+                        rankedListElement.setNewDistance(distance);
+                    } else {
+                        // A(t+1)[i,j] <- 1 + A(t)[i,j]
+                        rankedListElement.setNewDistance(rankedListElement.getDistance().add(BigDecimal.ONE));
+                    }
+                    c = c + 1;
+                }
 
-			//Perform the ranking
+                orderByDistance(rankList);
+
+                File auxFile = new File(targetDir, testSampleFile.getName());
+                rankList.writeToFile(auxFile);
+            }
+
+            // Perform the ranking
             k = k + 1;
             t = t + 1;
-		}
-	}
+        }
+    }
 
-    private void sortRankedListElementsDecreasingByDistance(List<RankedListElement> rankedList) {
-		Collections.sort(rankedList, new Comparator<RankedListElement>() {
+    private RankedList orderByDistance(RankedList r1) {
+        // ordena os itens do ranked list, decrescente, por valor de similaridade
+        Collections.sort(r1.getElements(), new Comparator<RankedListElement>() {
             public int compare(RankedListElement o1, RankedListElement o2) {
-				return o2.similarityValue.compareTo(o1.similarityValue);
-			}
-		});
-	}
+                return o1.getNewDistance().compareTo(o2.getNewDistance());
+            }
+        });
 
-    private BigDecimal mutualNeighborhs(Sample r1, Sample r2) {
-		List<RankedListElement> rankedList1 = r1.getRankedList();
-		List<RankedListElement> rankedList2 = r2.getRankedList();
+        return r1;
+    }
 
-        String name1 = rankedList1.get(0).devSampleId;
-        String name2 = rankedList2.get(0).devSampleId;
-
-        int post1 = r1.getIndexOfDevSampleId(name2);
+    private BigDecimal mutualNeighborhs(RankedList r1, RankedList r2) {
+        int post1 = r1.getPosition(r2.getElements().get(0).getId());
         if (post1 == -1) {
-            post1 = rankedList1.size() + 1;
+            post1 = r1.getElements().size() + 1;
         }
 
-        int post2 = r2.getIndexOfDevSampleId(name1);
+        int post2 = r2.getPosition(r1.getElements().get(0).getId());
         if (post2 == -1) {
-            post2 = rankedList2.size() + 1;
+            post2 = r2.getElements().size() + 1;
         }
 
         int distance = post1 + post2;
 
         return new BigDecimal(distance);
-	}
+    }
 
-	//k is with how many samples of the ranking lists will be considered
-	private BigDecimal intersectionMeasure(Sample sample1, Sample sample2, int k){
-		List<RankedListElement> rankedList1 = sample1.getRankedList();
-		List<RankedListElement> rankedList2 = sample2.getRankedList();
+    // k is with how many images of the ranking list will work
+    private BigDecimal intersectionMeasure(RankedList r1, RankedList r2, int k) {
+        if (k > r1.getElements().size()) {
+            k = r1.getElements().size();
+        }
 
-        if(k > rankedList1.size()){
-			k = rankedList1.size();
-		}
-
-        int intersectionCount = 0;
+        int cont = 0;
         for (int i = 0; i < k; i++) {
             for (int j = 0; j < k; j++) {
-                if(rankedList1.get(i).devSampleId.equals(rankedList2.get(j).devSampleId)){
-					intersectionCount++;
-				}
-			}
-		}
+                if (r1.getElements().get(i).equals(r2.getElements().get(j))) {
+                    cont = cont + 1;
+                }
+            }
+        }
 
-		BigDecimal v = new BigDecimal(intersectionCount).divide(new BigDecimal(k));
-		BigDecimal distance = BigDecimal.ONE.divide(BigDecimal.ONE.add(v),6,RoundingMode.HALF_UP);
-		return distance;
-	}
+        BigDecimal v = new BigDecimal(cont).divide(new BigDecimal(k));
+        BigDecimal distance = BigDecimal.ONE.divide(BigDecimal.ONE.add(v), 6, RoundingMode.HALF_UP);
+        return distance;
+    }
 
-	public static void main(String[] args) throws Exception {
-        File sampleDirectory = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/FlickrVideosTrain");
-        File targetDirectory = new File("C:/MO633_projeto/rl_sim_results");
+    private RankedList readRankedList(File file, boolean calculateDistance) throws NumberFormatException, IOException {
+        String fileId = processFileName(file.getName());
+        RankedList rankedList = new RankedList(fileId);
+
+        BufferedReader in = new BufferedReader(new FileReader(file.getAbsoluteFile()));
+        String s = null;
+        int cont = 0;
+        while ((s = in.readLine()) != null) {
+            cont = cont + 1;
+            String[] s_args = s.trim().split("\t");
+
+            String id = s_args[1].trim().replace("FlickrVideosTrain/", "");
+
+            double dist = Double.parseDouble(s_args[0].trim());
+            if (calculateDistance) {
+                dist = 1 - dist;
+            }
+
+            rankedList.setPosition(id, cont);
+
+            BigDecimal distance = new BigDecimal(dist).setScale(6, RoundingMode.HALF_UP);
+
+            RankedListElement rle = new RankedListElement(id, distance);
+            rle.setNewDistance(distance);
+
+            rankedList.getElements().add(rle);
+        }
+        in.close();
+
+        return rankedList;
+    }
+
+    private static String processFileName(String name) {
+        return name.replace("_list.txt", "");
+    }
+
+    public static void main(String[] args) throws Exception {
+        File devSampleDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/FlickrVideosTrain");
+        File testDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/VideosPlacingTask");
+        File targetDir = new File("C:/MO633_projeto/RLSim_results");
         int ks = 5;
-        int rounds = 1;
+        int rounds = 3;
         int imagesByRankedList = 5;
-        new RLSim().RlSim(sampleDirectory, targetDirectory, ks, rounds, imagesByRankedList);
+
+        new RLSim().RlSim(devSampleDir, testDir, targetDir, ks, rounds, imagesByRankedList);
     }
 }
