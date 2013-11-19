@@ -136,7 +136,8 @@ public class RLSim {
         int ks = 50;
         int rounds = 3;
         int imagesByRankedList = 100;
+        boolean applyInitialMutualNeighbors = false;
 
-        new RLSim().RlSim(devSampleDir, sampleDir, targetDir, ks, rounds, imagesByRankedList, false);
+        new RLSim().RlSim(devSampleDir, sampleDir, targetDir, ks, rounds, imagesByRankedList, applyInitialMutualNeighbors);
     }
 }
