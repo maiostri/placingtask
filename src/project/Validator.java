@@ -42,7 +42,7 @@ public class Validator {
         Map<Double, AtomicInteger> countsByThreshold = new TreeMap<Double, AtomicInteger>();
 
         for (File file : sampleFiles) {
-            Sample mediaSample = SampleLoader.readMediaSample(file, groundTruthResolver, numberOfElementsUsed);
+            Sample mediaSample = SampleIO.readMediaSample(file, groundTruthResolver, numberOfElementsUsed);
 
             mediaSample.estimateLocation(meanAlgorithm, numberOfElementsUsed);
             double havesineDistance = mediaSample.calcHavesineDistance();
@@ -109,7 +109,7 @@ public class Validator {
                 + ", [optional default ARITHMETIC_MEAN] and the name of the mean algorithm to use (ARITHMETIC_MEAN or WEIGHTED_ARITHMETIC_MEAN)");
 
 
-            File devSampleDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/FlickrVideosTrain");
+            /*File devSampleDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/FlickrVideosTrain");
             validators.add(new Validator(devSampleDir, 1, MeanAlgorithm.ARITHMETIC_MEAN));
             validators.add(new Validator(devSampleDir, 2, MeanAlgorithm.ARITHMETIC_MEAN));
             validators.add(new Validator(devSampleDir, 2, MeanAlgorithm.WEIGHTED_ARITHMETIC_MEAN));
@@ -126,6 +126,16 @@ public class Validator {
             validators.add(new Validator(testSampleDir, 5, MeanAlgorithm.WEIGHTED_ARITHMETIC_MEAN));
             validators.add(new Validator(testSampleDir, 10, MeanAlgorithm.ARITHMETIC_MEAN));
             validators.add(new Validator(testSampleDir, 10, MeanAlgorithm.WEIGHTED_ARITHMETIC_MEAN));
+            */
+
+            File rlsimSampleDir1 = new File("C:/MO633_projeto/rlsimExecucao1DadosSimilaridade");
+            validators.add(new Validator(rlsimSampleDir1, 1, MeanAlgorithm.ARITHMETIC_MEAN));
+            validators.add(new Validator(rlsimSampleDir1, 2, MeanAlgorithm.ARITHMETIC_MEAN));
+            validators.add(new Validator(rlsimSampleDir1, 2, MeanAlgorithm.WEIGHTED_ARITHMETIC_MEAN));
+            validators.add(new Validator(rlsimSampleDir1, 5, MeanAlgorithm.ARITHMETIC_MEAN));
+            validators.add(new Validator(rlsimSampleDir1, 5, MeanAlgorithm.WEIGHTED_ARITHMETIC_MEAN));
+            validators.add(new Validator(rlsimSampleDir1, 10, MeanAlgorithm.ARITHMETIC_MEAN));
+            validators.add(new Validator(rlsimSampleDir1, 10, MeanAlgorithm.WEIGHTED_ARITHMETIC_MEAN));
         }
 
         for (Validator validator : validators) {
