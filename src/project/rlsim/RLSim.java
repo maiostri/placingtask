@@ -8,20 +8,9 @@ import project.FileUtils;
 
 public class RLSim {
 
-    /**
-     * @param devSampleDir
-     * @param testDir --> directory of the test ranked files
-     * @param targetDir --> directory for the new ranked list
-     * @param ks --> number of neighbors considered when algorithm starts
-     * @param rounds --> number of iterations
-     * @param imagesByRankedList --> how many positions for each ranked list
-     */
-    public void RlSim(File devSampleDir, File testDir, File targetDir, int ks, int rounds, int imagesByRankedList) throws NumberFormatException, IOException {
-        int t = 0;
-        int k = ks;
-
-        RankedListIO rankedListIO = new RankedListIO();
-
+    public void RlSim(File devSampleDir, File sampleDir, File targetDir, int ks, int rounds,
+        int imagesByRankedList, boolean applyInitialMutualNeighbors) throws NumberFormatException, IOException
+    {
         System.out.println("Re-creating results folder...");
         FileUtils.deleteDirectory(targetDir);
         boolean isCreated = targetDir.mkdirs();
@@ -29,17 +18,36 @@ public class RLSim {
             throw new IOException("Can't create temp directory");
         }
 
-        boolean calculateDistance = Boolean.TRUE;
-        while (t < rounds) {
+        if (applyInitialMutualNeighbors) {
+            //execute mutual neighbors, which changes similarities to a certain kind of distance
+            executeRLSim(devSampleDir, sampleDir, targetDir, ks, 1, imagesByRankedList, true, false);
 
+            //execute intersectionMeasure considering input measures as distances (do not convert the values)
+            executeRLSim(devSampleDir, sampleDir, targetDir, ks, rounds, imagesByRankedList, false, false);
+        } else {
+            //execute intersectionMeasure considering input measures as similarities
+            executeRLSim(devSampleDir, sampleDir, targetDir, ks, rounds, imagesByRankedList, false, true);
+        }
+    }
+
+    private void executeRLSim(File devSampleDir, File sampleDir, File targetDir, int ks, int rounds,
+        int imagesByRankedList, boolean useMutualNeighborDistanceFunction, boolean readFirstRoundAsSimilarity) throws IOException
+    {
+        int k = ks;
+
+        RankedListIO rankedListIO = new RankedListIO();
+
+        for (int t = 0; t < rounds; t++) {
             // only in the first time load the original matrix, after that always work with the new rankedList rebuilding after each iteraction
             File[] files = null;
             if (t == 0) {
-                files = testDir.listFiles();
+                files = sampleDir.listFiles();
             } else {
-                calculateDistance = Boolean.FALSE;
                 files = targetDir.listFiles();
             }
+
+            //so inverter medidas na primeiro round de execucao, para intersectionMeasure
+            boolean invertMeasures = readFirstRoundAsSimilarity && t == 0;
 
             int testSampleCount = files.length;
             for (int i = 0; i < testSampleCount; i++) {
@@ -48,21 +56,23 @@ public class RLSim {
 
                 System.out.println("executing from sample " + (i + 1) + " of " + testSampleCount);
 
-                RankedList rankList = rankedListIO.readRankedList(testSampleFile, calculateDistance);
+                RankedList rankList = rankedListIO.readRankedList(testSampleFile, invertMeasures);
 
                 int elementCount = rankList.getCount();
                 for (int j = 0; j < elementCount; j++) {
                     RankedListElement rankedListElement = rankList.getElement(j);
 
-                    if (c < imagesByRankedList) {
+                    if (c < imagesByRankedList || useMutualNeighborDistanceFunction) {
                         // A(t+1)[i,j] <- d(ti,tj,k)
 
-                        RankedList aux = rankedListIO.readRankedList(devSampleDir, rankedListElement.getId(), calculateDistance);
+                        RankedList aux = rankedListIO.readRankedList(devSampleDir, rankedListElement.getId(), invertMeasures);
 
-                        BigDecimal distance = intersectionMeasure(rankList, aux, k);
-
-                        // TODO permitir a execucacao disto antes do loop. eecutar ou nao a depender de um parametro booleano do algoritmo
-                        //BigDecimal distance = mutualNeighborhs(rankList, aux);
+                        BigDecimal distance;
+                        if (useMutualNeighborDistanceFunction) {
+                            distance = mutualNeighborhs(rankList, aux);
+                        } else {
+                            distance = intersectionMeasure(rankList, aux, k);
+                        }
 
                         rankedListElement.setNewDistance(distance);
                     } else {
@@ -80,7 +90,6 @@ public class RLSim {
 
             // Perform the ranking
             k = k + 1;
-            t = t + 1;
         }
     }
 
@@ -122,12 +131,12 @@ public class RLSim {
 
     public static void main(String[] args) throws Exception {
         File devSampleDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/FlickrVideosTrain");
-        File testDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/VideosPlacingTask");
+        File sampleDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/FlickrVideosTrain");
         File targetDir = new File("C:/MO633_projeto/RLSim_results");
-        int ks = 5;
+        int ks = 50;
         int rounds = 3;
-        int imagesByRankedList = 5;
+        int imagesByRankedList = 100;
 
-        new RLSim().RlSim(devSampleDir, testDir, targetDir, ks, rounds, imagesByRankedList);
+        new RLSim().RlSim(devSampleDir, sampleDir, targetDir, ks, rounds, imagesByRankedList, false);
     }
 }
