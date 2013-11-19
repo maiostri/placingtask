@@ -10,11 +10,11 @@ import project.entity.Location;
 public class GroundTruthLoader {
 
     public static GroundTruthResolver loadGroundTruth() throws IOException {
-        System.out.println("Import ground truth from test samples...");
+        //System.out.println("Import ground truth from test samples...");
         Map<String, Location> groundTruthFromTestSamples = loadGroundTruthFromTestSamples();
         int size1 = groundTruthFromTestSamples.size();
 
-        System.out.println("Import ground truth from dev samples...");
+        //System.out.println("Import ground truth from dev samples...");
         Map<String, Location> groundTruthFromDevSamples = loadGroundTruthFromDevSamples();
         int size2 = groundTruthFromDevSamples.size();
 

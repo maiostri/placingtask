@@ -3,6 +3,8 @@ package project;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -11,34 +13,29 @@ import project.entity.Sample;
 import project.mean.IMeanAlgorithm;
 import project.mean.MeanAlgorithmFactory;
 
+/**
+ * Valitation toolbox, based on its initial version from Pascal Kelm, for the Placing Task at MediaEval
+ */
 public class Validator {
 
-    public static void main(String[] args) throws IOException {
-        File[] sampleFiles; // the *.list files
-        int numberOfElementsUsed = 1;
-        MeanAlgorithm meanAlgorithmType = MeanAlgorithm.ARITHMETIC_MEAN;
+    private final File sampleDir;
+    private final int numberOfElementsUsed;
+    private final MeanAlgorithm meanAlgorithmType;
 
-        if (args.length < 1) {
-            throw new IllegalArgumentException("Wrong use. Please call the program specifying: a directory containing the .list files"
-                + ", [optional default 1] the K number of KNN elements to compute the estimated locations"
-                + ", [optional default ARITHMETIC_MEAN] and the name of the mean algorithm to use (ARITHMETIC_MEAN or WEIGHTED_ARITHMETIC_MEAN)");
-        }
+    public Validator(File sampleDir, int numberOfElementsUsed, MeanAlgorithm meanAlgorithmType) {
+        this.sampleDir = sampleDir;
+        this.numberOfElementsUsed = numberOfElementsUsed;
+        this.meanAlgorithmType = meanAlgorithmType;
+    }
 
-        File folder = new File(args[0]);
-        sampleFiles = folder.listFiles();
-        if (args.length >= 2) {
-            numberOfElementsUsed = Integer.valueOf(args[1]);
-            if (args.length >= 3) {
-                meanAlgorithmType = Configs.MeanAlgorithm.valueOf(args[2]);
-            }
-        }
+    public void run() throws IOException {
+        File[] sampleFiles = sampleDir.listFiles();
         IMeanAlgorithm meanAlgorithm = MeanAlgorithmFactory.createMeanAlgorithm(meanAlgorithmType);
 
         // linha abaixo apenas para facilitar testes. rewmover depois!
         //sampleFiles = Arrays.copyOfRange(sampleFiles, 0, 10);
 
-        System.out.println("Valitation toolbox, based on its initial version from Pascal Kelm, for the Placing Task at MediaEval.\n");
-        System.out.println("Executing to folder=" + folder + ", K=" + numberOfElementsUsed + ", mean type=" + meanAlgorithmType + "...\n");
+        System.out.println("Executing to: folder=" + sampleDir + ", K=" + numberOfElementsUsed + ", mean type=" + meanAlgorithmType + "...\n");
 
         GroundTruthResolver groundTruthResolver = GroundTruthLoader.loadGroundTruth();
 
@@ -60,14 +57,8 @@ public class Validator {
             }
         }
 
-        System.out.println(" Done.");
-
-        /*****************
-         * Save Results
-         *****************/
+        // Save Results
         writeReportCountsByThreshold(sampleFiles.length, countsByThreshold);
-
-        System.out.println(" Finish.");
     }
 
     private static Double findThresholdMatch(double havesineDistance) {
@@ -81,8 +72,10 @@ public class Validator {
         return thresholdMatch;
     }
 
-    private static void writeReportCountsByThreshold(int samplesCount, Map<Double, AtomicInteger> countsByThreshold) throws IOException {
-        File fileListCompact = new File(Configs.FILENAME_THRESHOLD_COUNT);
+    private void writeReportCountsByThreshold(int samplesCount, Map<Double, AtomicInteger> countsByThreshold) throws IOException {
+        File fileListCompact = new File(Configs.FILENAME_THRESHOLD_COUNT + "_" + sampleDir.getName()
+            + "_K" + numberOfElementsUsed + "_" + meanAlgorithmType.name() + ".txt");
+
         PrintStream bwCompact = new PrintStream(fileListCompact);
         bwCompact.printf("%10s %10s %15s", "Threshold", "Count", "Percentage");
         bwCompact.println();
@@ -93,5 +86,50 @@ public class Validator {
             bwCompact.println();
         }
         bwCompact.close();
+    }
+
+    public static void main(String[] args) throws IOException {
+        List<Validator> validators = new ArrayList<Validator>();
+
+        if (args.length >= 1) {
+            File sampleDir = new File(args[0]);
+            int numberOfElementsUsed = 1;
+            MeanAlgorithm meanAlgorithmType = MeanAlgorithm.ARITHMETIC_MEAN;
+            if (args.length >= 2) {
+                numberOfElementsUsed = Integer.valueOf(args[1]);
+                if (args.length >= 3) {
+                    meanAlgorithmType = Configs.MeanAlgorithm.valueOf(args[2]);
+                }
+            }
+            validators.add(new Validator(sampleDir, numberOfElementsUsed, meanAlgorithmType));
+        } else {
+            System.err.println("Invalid Use. Some pre-defined profiles will be used instead."
+                + " Please call the program specifying: a directory containing the .list files"
+                + ", [optional default 1] the K number of KNN elements to compute the estimated locations"
+                + ", [optional default ARITHMETIC_MEAN] and the name of the mean algorithm to use (ARITHMETIC_MEAN or WEIGHTED_ARITHMETIC_MEAN)");
+
+
+            File devSampleDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/FlickrVideosTrain");
+            validators.add(new Validator(devSampleDir, 1, MeanAlgorithm.ARITHMETIC_MEAN));
+            validators.add(new Validator(devSampleDir, 2, MeanAlgorithm.ARITHMETIC_MEAN));
+            validators.add(new Validator(devSampleDir, 2, MeanAlgorithm.WEIGHTED_ARITHMETIC_MEAN));
+            validators.add(new Validator(devSampleDir, 5, MeanAlgorithm.ARITHMETIC_MEAN));
+            validators.add(new Validator(devSampleDir, 5, MeanAlgorithm.WEIGHTED_ARITHMETIC_MEAN));
+            validators.add(new Validator(devSampleDir, 10, MeanAlgorithm.ARITHMETIC_MEAN));
+            validators.add(new Validator(devSampleDir, 10, MeanAlgorithm.WEIGHTED_ARITHMETIC_MEAN));
+
+            File testSampleDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/VideosPlacingTask");
+            validators.add(new Validator(testSampleDir, 1, MeanAlgorithm.ARITHMETIC_MEAN));
+            validators.add(new Validator(testSampleDir, 2, MeanAlgorithm.ARITHMETIC_MEAN));
+            validators.add(new Validator(testSampleDir, 2, MeanAlgorithm.WEIGHTED_ARITHMETIC_MEAN));
+            validators.add(new Validator(testSampleDir, 5, MeanAlgorithm.ARITHMETIC_MEAN));
+            validators.add(new Validator(testSampleDir, 5, MeanAlgorithm.WEIGHTED_ARITHMETIC_MEAN));
+            validators.add(new Validator(testSampleDir, 10, MeanAlgorithm.ARITHMETIC_MEAN));
+            validators.add(new Validator(testSampleDir, 10, MeanAlgorithm.WEIGHTED_ARITHMETIC_MEAN));
+        }
+
+        for (Validator validator : validators) {
+            validator.run();
+        }
     }
 }

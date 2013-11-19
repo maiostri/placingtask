@@ -13,7 +13,7 @@ public class SampleLoader {
     public static Sample readMediaSample(File sampleFile, GroundTruthResolver groundTruthResolver, final int numberOfElementsUsed) throws IOException {
         String sampleIdentifier = readSampleIdentifierFromFilename(sampleFile.getName());
 
-        System.out.println("Loading sample " + sampleIdentifier);
+        //System.out.println("Loading sample " + sampleIdentifier);
 
         Location sampleGroundTruth = groundTruthResolver.get(sampleIdentifier);
 
