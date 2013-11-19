@@ -35,7 +35,7 @@ public class Validator {
         IMeanAlgorithm meanAlgorithm = MeanAlgorithmFactory.createMeanAlgorithm(meanAlgorithmType);
 
         // linha abaixo apenas para facilitar testes. rewmover depois!
-        //sampleFiles = Arrays.copyOfRange(sampleFiles, 0, 100);
+        //sampleFiles = Arrays.copyOfRange(sampleFiles, 0, 10);
 
         System.out.println("Valitation toolbox, based on its initial version from Pascal Kelm, for the Placing Task at MediaEval.\n");
         System.out.println("Executing to folder=" + folder + ", K="+numberOfElementsUsed + ", mean type=" + meanAlgorithmType + "...\n");
@@ -47,7 +47,7 @@ public class Validator {
         for (File file : sampleFiles) {
             Sample mediaSample = SampleLoader.readMediaSample(file, groundTruthResolver, numberOfElementsUsed);
 
-            mediaSample.estimateLocation(meanAlgorithm);
+            mediaSample.estimateLocation(meanAlgorithm, numberOfElementsUsed);
             double havesineDistance = mediaSample.calcHavesineDistance();
 
             Double thresholdMatch = findThresholdMatch(havesineDistance);

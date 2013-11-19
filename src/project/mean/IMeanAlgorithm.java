@@ -6,5 +6,5 @@ import project.entity.RankedListElement;
 
 public interface IMeanAlgorithm {
 
-    Location calculateAverageLocation(final List<RankedListElement> rankedElementList);
+    Location calculateAverageLocation(final List<RankedListElement> rankedElementList, int numberOfElementsUsed);
 }

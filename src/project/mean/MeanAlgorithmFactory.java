@@ -4,7 +4,7 @@ import project.Configs;
 
 public class MeanAlgorithmFactory {
 
-    public static IMeanAlgorithm createMeanAlgorithm(final Configs.MeanAlgorithm meanAlgorithmName) {
+    public static IMeanAlgorithm createMeanAlgorithm(Configs.MeanAlgorithm meanAlgorithmName) {
         IMeanAlgorithm meanAlgorithm = null;
         switch (meanAlgorithmName) {
             case ARITHMETIC_MEAN:
@@ -15,7 +15,6 @@ public class MeanAlgorithmFactory {
                 break;
             case GEOMETRIC_MEAN:
                 meanAlgorithm = new GeometricMean();
-            default:
                 break;
         }
         return meanAlgorithm;
