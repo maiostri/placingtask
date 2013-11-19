@@ -59,10 +59,10 @@ public class RLSim {
 
                         RankedList aux = rankedListIO.readRankedList(devSampleDir, rankedListElement.getId(), calculateDistance);
 
-                        // BigDecimal distance = intersectionMeasure(rankList, aux, k);
+                        BigDecimal distance = intersectionMeasure(rankList, aux, k);
 
                         // TODO permitir a execucacao disto antes do loop. eecutar ou nao a depender de um parametro booleano do algoritmo
-                        BigDecimal distance = mutualNeighborhs(rankList, aux);
+                        //BigDecimal distance = mutualNeighborhs(rankList, aux);
 
                         rankedListElement.setNewDistance(distance);
                     } else {
