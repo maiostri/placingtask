@@ -9,17 +9,19 @@ import java.io.IOException;
 public class FileUtils {
 
     public static void deleteDirectory(File file) throws IOException{
-        File[] files = file.listFiles();
-        if (files != null) {
-            for (File f : files) {
-                if (f.isDirectory()) {
-                    deleteDirectory(f);
-                } else {
-                    f.delete();
+        if (file != null && file.exists() && file.isDirectory()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File f : files) {
+                    if (f.isDirectory()) {
+                        deleteDirectory(f);
+                    } else {
+                        f.delete();
+                    }
                 }
             }
+            file.delete();
         }
-        file.delete();
     }
 
     public static void addLineToFile(String s, File file) throws IOException{

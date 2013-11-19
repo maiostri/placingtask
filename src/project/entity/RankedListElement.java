@@ -1,5 +1,7 @@
 package project.entity;
 
+import project.MathUtils;
+
 public class RankedListElement {
     private String identifier;
     private Location groundTruth;
@@ -33,5 +35,12 @@ public class RankedListElement {
 
     public void setGroundTruth(Location groundTruth) {
         this.groundTruth = groundTruth;
+    }
+
+    /**
+     * converts from similarity to distance and vice-versa
+     */
+    public void convertSimilarityFactor() {
+        similarityFactor = MathUtils.round(1 - similarityFactor, 6);
     }
 }

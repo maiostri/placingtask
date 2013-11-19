@@ -51,9 +51,14 @@ public class Sample {
         return MathUtils.calcHaversineDistance(estimatedLocation, location);
     }
 
+    public void convertSimilarityFactorMeasures() {
+        for(RankedListElement rankedListElement : similarityList){
+            rankedListElement.convertSimilarityFactor();
+        }
+    }
+
     @Override
     public String toString() {
-        return new StringBuilder("fileName=").append(identifier).append(", ")
-            .append(location).toString();
+        return new StringBuilder("fileName=").append(identifier).append(", groundTruthLocation=").append(location).toString();
     }
 }

@@ -1,5 +1,6 @@
 package project;
 
+import java.math.BigDecimal;
 import project.entity.Location;
 
 public class MathUtils {
@@ -22,5 +23,9 @@ public class MathUtils {
     	double c = 2 * Math.asin(Math.min(1, Math.sqrt(a)));
     	double d = R * c;
     	return d;
+    }
+
+    public static double round(double value, int decimalPlaces) {
+        return new BigDecimal(String.valueOf(value)).setScale(decimalPlaces, BigDecimal.ROUND_HALF_UP).doubleValue();
     }
 }
