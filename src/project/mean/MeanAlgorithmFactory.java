@@ -13,9 +13,6 @@ public class MeanAlgorithmFactory {
             case WEIGHTED_ARITHMETIC_MEAN:
                 meanAlgorithm = new WeightedArithmeticMean();
                 break;
-            case GEOMETRIC_MEAN:
-                meanAlgorithm = new GeometricMean();
-                break;
         }
         return meanAlgorithm;
     }

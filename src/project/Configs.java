@@ -13,6 +13,6 @@ public class Configs {
     public static final String FILENAME_THRESHOLD_COUNT = "thresholdCount.txt";
 
     public enum MeanAlgorithm {
-        ARITHMETIC_MEAN, WEIGHTED_ARITHMETIC_MEAN, GEOMETRIC_MEAN;
+        ARITHMETIC_MEAN, WEIGHTED_ARITHMETIC_MEAN;
     }
 }

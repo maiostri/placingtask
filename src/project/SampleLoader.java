@@ -22,13 +22,14 @@ public class SampleLoader {
         String s = null;
         BufferedReader in = new BufferedReader(new FileReader(sampleFile));
         int count = 0;
-        while ((s = in.readLine()) != null && count < numberOfElementsUsed) {
-            String[] s_args = s.trim().split("\\s++");
+        while (count < numberOfElementsUsed && (s = in.readLine()) != null) {
+            String[] lineElements = s.trim().split("\\s++");
 
-            String runIdentifier = readSampleIdentifierFromDevSampleName(s_args[1]);
+            String runIdentifier = readSampleIdentifierFromDevSampleName(lineElements[1]);
+            double similarity = Double.parseDouble(lineElements[0].replace(",", "."));
+
             Location runGroundTruth = groundTruthResolver.get(runIdentifier);
-
-            RankedListElement run = new RankedListElement(runIdentifier, runGroundTruth, Double.parseDouble(s_args[0].replace(",", ".")));
+            RankedListElement run = new RankedListElement(runIdentifier, runGroundTruth, similarity);
 
             mediaSample.addSimilarityElement(run);
             count++;

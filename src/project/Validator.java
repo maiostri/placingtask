@@ -21,7 +21,7 @@ public class Validator {
         if (args.length < 1) {
             throw new IllegalArgumentException("Wrong use. Please call the program specifying: a directory containing the .list files"
                 + ", [optional default 1] the K number of KNN elements to compute the estimated locations"
-                + ", [optional default ARITHMETIC_MEAN] and the name of the mean algorithm to use (ARITHMETIC_MEAN, WEIGHTED_ARITHMETIC_MEAN, or GEOMETRIC_MEAN)");
+                + ", [optional default ARITHMETIC_MEAN] and the name of the mean algorithm to use (ARITHMETIC_MEAN or WEIGHTED_ARITHMETIC_MEAN)");
         }
 
         File folder = new File(args[0]);
@@ -38,7 +38,7 @@ public class Validator {
         //sampleFiles = Arrays.copyOfRange(sampleFiles, 0, 10);
 
         System.out.println("Valitation toolbox, based on its initial version from Pascal Kelm, for the Placing Task at MediaEval.\n");
-        System.out.println("Executing to folder=" + folder + ", K="+numberOfElementsUsed + ", mean type=" + meanAlgorithmType + "...\n");
+        System.out.println("Executing to folder=" + folder + ", K=" + numberOfElementsUsed + ", mean type=" + meanAlgorithmType + "...\n");
 
         GroundTruthResolver groundTruthResolver = GroundTruthLoader.loadGroundTruth();
 
