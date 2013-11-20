@@ -142,9 +142,9 @@ public class RLSim {
     }
 
     public static void main(String[] args) throws Exception {
-        File devSampleDir = new File("/run/media/ricardo/Expansion Drive/Unicamp/Banco_de_Dados_II/JurandyLists/FlickrVideosTrain");
-        File sampleDir = new File("/run/media/ricardo/Expansion Drive/Unicamp/Banco_de_Dados_II/JurandyLists/FlickrVideosTrain");
-        File targetDir = new File("/run/media/ricardo/Expansion Drive/RLSim_results");
+        File devSampleDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/FlickrVideosTrain");
+        File sampleDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/FlickrVideosTrain");
+        File targetDir = new File("C:/MO633_projeto/RLSim_results");
         int ks = 20;
         int rounds = 3;
         int imagesByRankedList = 100;
