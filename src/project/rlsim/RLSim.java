@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
+
 import project.FileUtils;
 
 public class RLSim {
@@ -36,6 +39,8 @@ public class RLSim {
         int k = ks;
 
         RankedListIO rankedListIO = new RankedListIO();
+        
+        Map <String, RankedList> auxRankedListCache = new HashMap<String, RankedList>();
 
         for (int t = 0; t < rounds; t++) {
             // only in the first time load the original matrix, after that always work with the new rankedList rebuilding after each iteraction
@@ -56,7 +61,7 @@ public class RLSim {
 
                 System.out.println("executing from sample " + (i + 1) + " of " + testSampleCount);
 
-                RankedList rankList = rankedListIO.readRankedList(testSampleFile, invertMeasures);
+                RankedList rankList = rankedListIO.readRankedList(testSampleFile, invertMeasures, 100);
 
                 int elementCount = rankList.getCount();
                 for (int j = 0; j < elementCount; j++) {
@@ -65,13 +70,19 @@ public class RLSim {
                     if (c < imagesByRankedList || useMutualNeighborDistanceFunction) {
                         // A(t+1)[i,j] <- d(ti,tj,k)
 
-                        RankedList aux = rankedListIO.readRankedList(devSampleDir, rankedListElement.getId(), invertMeasures);
+                	RankedList aux;
 
                         BigDecimal distance;
                         if (useMutualNeighborDistanceFunction) {
+                            aux = rankedListIO.readRankedList(devSampleDir, rankedListElement.getId(), invertMeasures);
                             distance = mutualNeighborhs(rankList, aux);
                         } else {
-                            distance = intersectionMeasure(rankList, aux, k);
+                            RankedList rankedListAlreadyReaded = auxRankedListCache.get(rankedListElement.getId());
+                            if  (rankedListAlreadyReaded == null) {
+                        	rankedListAlreadyReaded = rankedListIO.readRankedList(devSampleDir, rankedListElement.getId(), invertMeasures, k);
+                        	auxRankedListCache.put(rankedListElement.getId(), rankedListAlreadyReaded);
+                            }
+                            distance = intersectionMeasure(rankList, rankedListAlreadyReaded, k);
                         }
 
                         rankedListElement.setNewDistance(distance);
@@ -84,7 +95,7 @@ public class RLSim {
 
                 rankList.orderByDistance();
 
-                File auxFile = new File(targetDir, testSampleFile.getName());
+                File auxFile = new File(targetDir, testSampleFile.getName());                
                 rankedListIO.writeRankedListToFile(rankList, auxFile);
             }
 
@@ -114,12 +125,13 @@ public class RLSim {
         if (k > r1.getCount()) {
             k = r1.getCount();
         }
-
+        
         int cont = 0;
         for (int i = 0; i < k; i++) {
             for (int j = 0; j < k; j++) {
                 if (r1.getElement(i).equals(r2.getElement(j))) {
-                    cont = cont + 1;
+		    cont = cont + 1;
+                    break;
                 }
             }
         }
@@ -130,10 +142,10 @@ public class RLSim {
     }
 
     public static void main(String[] args) throws Exception {
-        File devSampleDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/FlickrVideosTrain");
-        File sampleDir = new File("C:/MO633_projeto/data/visual/MediaEval2012_JurandyLists/FlickrVideosTrain");
-        File targetDir = new File("C:/MO633_projeto/RLSim_results");
-        int ks = 50;
+        File devSampleDir = new File("/run/media/ricardo/Expansion Drive/Unicamp/Banco_de_Dados_II/JurandyLists/FlickrVideosTrain");
+        File sampleDir = new File("/run/media/ricardo/Expansion Drive/Unicamp/Banco_de_Dados_II/JurandyLists/FlickrVideosTrain");
+        File targetDir = new File("/run/media/ricardo/Expansion Drive/RLSim_results");
+        int ks = 20;
         int rounds = 3;
         int imagesByRankedList = 100;
         boolean applyInitialMutualNeighbors = false;

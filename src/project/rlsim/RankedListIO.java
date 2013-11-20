@@ -17,10 +17,15 @@ public class RankedListIO {
 
     public RankedList readRankedList(File sampleDir, String sampleId, boolean calculateDistance) throws NumberFormatException, IOException {
         File file = new File(sampleDir, sampleId + "_list.txt");
-        return readRankedList(file, calculateDistance);
+        return readRankedList(file, calculateDistance,100);
+    }
+    
+    public RankedList readRankedList(File sampleDir, String sampleId, boolean calculateDistance, int k) throws NumberFormatException, IOException {
+        File file = new File(sampleDir, sampleId + "_list.txt");
+        return readRankedList(file, calculateDistance,k);
     }
 
-    public RankedList readRankedList(File file, boolean calculateDistance) throws NumberFormatException, IOException {
+    public RankedList readRankedList(File file, boolean calculateDistance, int k) throws NumberFormatException, IOException {
         String fileId = processFileName(file.getName());
         List<RankedListElement> elements = new ArrayList<RankedListElement>();
         Map<String, Integer> positionsByElementId = new HashMap<String, Integer>();
@@ -28,7 +33,7 @@ public class RankedListIO {
         BufferedReader in = new BufferedReader(new FileReader(file.getAbsoluteFile()));
         String s = null;
         int cont = 0;
-        while ((s = in.readLine()) != null) {
+        while (cont < k && (s = in.readLine()) != null) {
             cont = cont + 1;
             String[] s_args = s.trim().split("\t");
 
